@@ -1,7 +1,7 @@
 clear,clc
 table = xlsread('members.xlsx');
 forcetable = xlsread('forces.xlsx');
-forcetable = [0;-10;0;0;0;0];
+forcetable = [0;0;0;-10;0;0];
 members = size(table,1); %number of members
 size = max((table(:,3)));
 %for each member, fills out the remainder of the table
@@ -46,6 +46,7 @@ for k=1:members
         end
     end
 end
+
        
 %add all of the matricies together?
 for i=1:members
@@ -53,7 +54,96 @@ for i=1:members
 end
 
 %solving for diflection in the beams:
+%I need to know the given diflections, because we know that certain joints
+%are 0 we can neglect this 
 %invkgg = inv(KGG);
-%Diflection = forcetable * inv(KGG);
-%x = mldivide(KGG,forcetable);
+%DLETE THIS LATER AND LOAD FROM FILE!
+knowndiflections = [0,0,1,1,0,0];
+%go through and basing it off the diflections, calculate the matrix we
+%need, basically 0 out every other column?
+%loop through the array and if the value is 0 delete that value from the
+%array?
+KGGTest = KGG;
+for i=1:length(knowndiflections)
+    if(knowndiflections(i) == 0)
+    KGGTest(:,i) = 0;
+    KGGTest(i,:) = 0;
+    end
+end
+%can i take the inverse of this, NO BECAUSE DET IS STILL 0?
+notsurewhattocallthis = nonzeros(KGGTest);
+%we know that its a 2x2 because there are 2 nonzero values in known
+%difelctions, will this always be the case though?, I think so as long
+%there is not a roller, I will have to go back and update this laster
+
+%So here I am taking a vector of all the non zero values (could cause an
+%issue if the value is actually 0 in the array)
+BoundaryKGMatrix = vec2mat(notsurewhattocallthis,sum(knowndiflections));
+
+%now that we have the boundary matrix we hsould be able to solve for the
+%unknown forces
+%We need to find the forces that are being apllied on in the matrix, this
+%should just be the forces that correspond to the 1 values of the
+%knowndiflections i beleive.
+counter = 1;
+for i = 1:length(forcetable)
+    if(knowndiflections(i)~= 0)
+        BoundaryForceMatrix(counter) = forcetable(i);
+        counter = counter +1;
+    end
+    
+end
+BoundaryForceMatrix = transpose(BoundaryForceMatrix);
+Reactions = BoundaryForceMatrix;
+DisplacemntValues = BoundaryKGMatrix\BoundaryForceMatrix;
+
+%Now we need to solve for the reaction forces in teh strucutre, to do this
+%we just multipl ythe KG by the new dispacement vales we just obtained,
+%first i need to put the dispacment values I got  from before and put them
+%in the correct spot in the matrix
+ReactionForcesDispacementMatrix = zeros(length(knowndiflections),1);
+counter = 1;
+for i=1:length(knowndiflections)
+    if(knowndiflections(i) ~= 0)
+        ReactionForcesDispacementMatrix(i) = DisplacemntValues(counter);
+    counter = counter +1;
+    end 
+end
+%now we should solve for the forces
+ReactionForces = KGG*ReactionForcesDispacementMatrix;
+%go through the matrix and round the values, due to some computer rounding
+%error we can be left with a value so small that we can basically asumme it
+%is 0
+ReactionForces=round(ReactionForces,5);
+
+%Now we have to go through and find the internal forces within each
+%structureal member I guess now i need ot ifgure out what kind of members i
+%need to add?
+
+knowndiflections = knowndiflections';
+counter = 1;
+for i = 1:members
+    for j =2:3
+        temp(counter) = table(i,j)*2-1;
+        counter = counter +1;
+        temp(counter) = table(i,j)*2;
+        counter = counter + 1;
+    end
+    DispacmentPerMember(:,:,i) = temp';
+    
+    counter = 1;
+end
+
+
+for j = 1:members
+    for i = 1:length(temp)
+        DispacmentPerMemberUpdated(i,1,j) = ReactionForcesDispacementMatrix(DispacmentPerMember(i,1,j));
+    end
+end
+
+
+
+ for i = 1:members
+    InternalForces(:,:,i) = KGL(:,:,i) * DispacmentPerMemberUpdated(:,:,i);
+ end
 

@@ -12,7 +12,6 @@ end
 disp('Members,startpin, endpin, E, A, L, theta, costheta, sintheta');
 disp(table);
 KLBase = [1 0 -1 0; 0 0 0 0; -1 0 1 0; 0 0 0 0];
-disp(KLBase);
 %calculates the local stiffness matrix and trasnformation matrix for each
 %member
 for i = 1:members
@@ -115,7 +114,8 @@ ReactionForces = KGG*ReactionForcesDispacementMatrix;
 %error we can be left with a value so small that we can basically asumme it
 %is 0
 ReactionForces=round(ReactionForces,5);
-
+disp('Reaction Forces');
+disp(ReactionForces);
 %Now we have to go through and find the internal forces within each
 %structureal member I guess now i need ot ifgure out what kind of members i
 %need to add?
@@ -146,4 +146,6 @@ end
  for i = 1:members
     InternalForces(:,:,i) = KGL(:,:,i) * DispacmentPerMemberUpdated(:,:,i);
  end
+ disp('Internal Forces')
+ disp(InternalForces)
 

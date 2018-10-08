@@ -108,6 +108,9 @@ for i=1:length(knowndiflections)
     counter = counter +1;
     end 
 end
+disp('Deflection of joints');
+disp(ReactionForcesDispacementMatrix)
+
 %now we should solve for the forces
 ReactionForces = KGG*ReactionForcesDispacementMatrix;
 %go through the matrix and round the values, due to some computer rounding

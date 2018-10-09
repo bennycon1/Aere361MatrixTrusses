@@ -1,9 +1,9 @@
 clear,clc
 table = xlsread('members.xlsx');
-forcetable = xlsread('forces.xlsx');
-forcetable = [0;0;0;-10;0;0];
+%forcetable = xlsread('forces.xlsx');
+forcetable = [0;0;0;0;80000;0];
 members = size(table,1); %number of members
-size = max((table(:,3)));
+size = max(max(table(:,3)),max(table(:,3)));
 %for each member, fills out the remainder of the table
 for i = 1:members
     table(i,8) = cosd(table(i,7));
@@ -15,12 +15,12 @@ KLBase = [1 0 -1 0; 0 0 0 0; -1 0 1 0; 0 0 0 0];
 %calculates the local stiffness matrix and trasnformation matrix for each
 %member
 for i = 1:members
-   KL(:,:,i) = (table(i,4)*table(i,5)/table(i,6))*KLBase;
-   TL(:,:,i) = [table(i,8) table(i,9) 0 0; -1*table(i,9) table(i,8) 0 0; 0 0 table(i,8) table(i,9); 0 0 -1*table(i,9) table(i,8)];
+    KL(:,:,i) = (table(i,4)*table(i,5)/table(i,6))*KLBase;
+    TL(:,:,i) = [table(i,8) table(i,9) 0 0; -1*table(i,9) table(i,8) 0 0; 0 0 table(i,8) table(i,9); 0 0 -1*table(i,9) table(i,8)];
 end
 %calculates the stiffness matrix for each member in global coordinate
 for i = 1:members
-  KGL(:,:,i) = transpose(TL(:,:,i))*(KL(:,:,i))*TL(:,:,i);
+    KGL(:,:,i) = transpose(TL(:,:,i))*(KL(:,:,i))*TL(:,:,i);
 end
 %Assembly... this is where the problems arise,  we know pins now how do we
 %format matriceis to realize that
@@ -37,16 +37,17 @@ end
 
 %going through orginal KGL and updating the position for the correct size
 %of KGG
+%
 for k=1:members
     for i=1:4 %rows
         for j=1:4 %cols
-         KGLupdated(vecvalues(1,i,k),vecvalues(1,j,k),k) = KGL(i,j,k); 
-         %fprintf('KGLupdated array location %d %d \n',vecvalues(1,i,k),vecvalues(1,j,k))
+            KGLupdated(vecvalues(1,i,k),vecvalues(1,j,k),k) = KGL(i,j,k);
+            %fprintf('KGLupdated array location %d %d \n',vecvalues(1,i,k),vecvalues(1,j,k))
         end
     end
 end
 
-       
+
 %add all of the matricies together?
 for i=1:members
     KGG = KGG + KGLupdated(:,:,i);
@@ -54,10 +55,10 @@ end
 
 %solving for diflection in the beams:
 %I need to know the given diflections, because we know that certain joints
-%are 0 we can neglect this 
+%are 0 we can neglect this
 %invkgg = inv(KGG);
 %DLETE THIS LATER AND LOAD FROM FILE!
-knowndiflections = [0,0,1,1,0,0];
+knowndiflections = [0,0,1,0,1,1];
 %go through and basing it off the diflections, calculate the matrix we
 %need, basically 0 out every other column?
 %loop through the array and if the value is 0 delete that value from the
@@ -65,8 +66,8 @@ knowndiflections = [0,0,1,1,0,0];
 KGGTest = KGG;
 for i=1:length(knowndiflections)
     if(knowndiflections(i) == 0)
-    KGGTest(:,i) = 0;
-    KGGTest(i,:) = 0;
+        KGGTest(:,i) = 0;
+        KGGTest(i,:) = 0;
     end
 end
 %can i take the inverse of this, NO BECAUSE DET IS STILL 0?
@@ -105,8 +106,8 @@ counter = 1;
 for i=1:length(knowndiflections)
     if(knowndiflections(i) ~= 0)
         ReactionForcesDispacementMatrix(i) = DisplacemntValues(counter);
-    counter = counter +1;
-    end 
+        counter = counter +1;
+    end
 end
 disp('Deflection of joints');
 disp(ReactionForcesDispacementMatrix)
@@ -116,7 +117,7 @@ ReactionForces = KGG*ReactionForcesDispacementMatrix;
 %go through the matrix and round the values, due to some computer rounding
 %error we can be left with a value so small that we can basically asumme it
 %is 0
-ReactionForces=round(ReactionForces,5);
+ReactionForces=round(ReactionForces,8);
 disp('Reaction Forces');
 disp(ReactionForces);
 %Now we have to go through and find the internal forces within each
@@ -146,9 +147,9 @@ end
 
 
 
- for i = 1:members
+for i = 1:members
     InternalForces(:,:,i) = KGL(:,:,i) * DispacmentPerMemberUpdated(:,:,i);
- end
- disp('Internal Forces')
- disp(InternalForces)
+end
+disp('Internal Forces');
+disp(InternalForces);
 

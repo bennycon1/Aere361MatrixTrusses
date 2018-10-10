@@ -1,9 +1,10 @@
 clear,clc
 table = xlsread('members.xlsx');
-%forcetable = xlsread('forces.xlsx');
-forcetable = [0;0;0;0;80000;0];
+forcetable1 = xlsread('forces.xlsx');
+forcetable = forcetable1(:,1);
+%forcetable = [0;0;0;0;100000*cosd(60);-100000*sind(60);0;0];
 members = size(table,1); %number of members
-size = max(max(table(:,3)),max(table(:,3)));
+size = max(max(table(:,2)),max(table(:,3)));
 %for each member, fills out the remainder of the table
 for i = 1:members
     table(i,8) = cosd(table(i,7));
@@ -20,7 +21,7 @@ for i = 1:members
 end
 %calculates the stiffness matrix for each member in global coordinate
 for i = 1:members
-    KGL(:,:,i) = transpose(TL(:,:,i))*(KL(:,:,i))*TL(:,:,i);
+    KGL(:,:,i) = TL(:,:,i).'*(KL(:,:,i))*TL(:,:,i);
 end
 %Assembly... this is where the problems arise,  we know pins now how do we
 %format matriceis to realize that
@@ -31,7 +32,7 @@ KGLupdated = zeros(size*2);
 
 %Create an array of the values for each table to use for row and columns,
 %hard to explain in text
-for i=1:size
+for i=1:members
     vecvalues(:,:,i) = [[table(i,2)*2-1,table(i,2)*2],[table(i,3)*2-1,table(i,3)*2]];
 end
 
@@ -58,7 +59,9 @@ end
 %are 0 we can neglect this
 %invkgg = inv(KGG);
 %DLETE THIS LATER AND LOAD FROM FILE!
-knowndiflections = [0,0,1,0,1,1];
+%Enter 1 if member can move in this direction (base conditions)
+%knowndiflections = [0,0,0,0,1,1,0,0];
+knowndiflections = forcetable1(:,2);
 %go through and basing it off the diflections, calculate the matrix we
 %need, basically 0 out every other column?
 %loop through the array and if the value is 0 delete that value from the
